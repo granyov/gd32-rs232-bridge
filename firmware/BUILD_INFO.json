@@ -1,0 +1,41 @@
+{
+  "version": "1.1.0",
+  "target": "GD32F103C8T6",
+  "hxtal_hz": 16000000,
+  "core_hz": 16000000,
+  "apb1_hz": 16000000,
+  "apb2_hz": 16000000,
+  "host_baud": 38400,
+  "logger_baud": 38400,
+  "uart_mode": "8N1, no flow control",
+  "flash_origin": "0x08000000",
+  "flash_bytes": 65536,
+  "sram_bytes": 20480,
+  "binary_bytes": 3188,
+  "data_bss_bytes": 4176,
+  "reserved_heap_stack_bytes": 1536,
+  "hardware_tested": true,
+  "sdk_repository": "https://github.com/GigaDevice-GD32-MCU/GD32F10x_Firmware_Library",
+  "sdk_commit": "23a80f96368336b4d47014da33cd9b7ba550165e",
+  "compiler": "Arm GNU Toolchain 14.3.Rel1 GCC 14.3.1 20250623",
+  "tests": [
+    "host queue tests, 234000 bytes, ASan/UBSan",
+    "HEX checksums and BIN agreement",
+    "vector addresses and memory bounds"
+  ],
+  "pin_mapping": {
+    "ttyS4": "DD11 / XP8 SWD / XP9 RS232",
+    "ttyS5": "DD9 / XP6 SWD / XP7 RS232"
+  },
+  "hardware_validation": {
+    "date": "2026-09-30",
+    "port": "/dev/ttyS5",
+    "baud": 38400,
+    "id": 1,
+    "results": [
+      "GTT and GDD responses received",
+      "MEA: channel 2, 98 raw bytes, MQTT publication confirmed"
+    ],
+    "scope": "One connection after user-reported flashing; MCU readback and long-duration load test not performed."
+  }
+}
