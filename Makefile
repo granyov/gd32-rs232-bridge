@@ -50,7 +50,7 @@ test:
 	 -fsanitize=address,undefined -ICore/Inc tests/test_bridge.c Core/Src/bridge.c \
 	 -o build/tests/test_bridge
 	./build/tests/test_bridge
-	${HOST_CC:-cc} -std=c11 -Wall -Wextra -Werror -g \
+	$${HOST_CC:-cc} -std=c11 -Wall -Wextra -Werror -g \
 	 -fsanitize=address,undefined -ICore/Inc tests/test_config.c Core/Src/config.c \
 	 -o build/tests/test_config
 	./build/tests/test_config
