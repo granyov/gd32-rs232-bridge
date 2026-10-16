@@ -82,8 +82,11 @@ def describe(c):
 
 
 def read_slots(args):
-    return (decode(Path(args.slot_a).read_bytes()),
-            decode(Path(args.slot_b).read_bytes()))
+    a = Path(args.slot_a).read_bytes()
+    b = Path(args.slot_b).read_bytes()
+    if len(a) != PAGE_SIZE or len(b) != PAGE_SIZE:
+        raise ValueError("Each SWD slot dump must be exactly 1024 bytes")
+    return decode(a), decode(b)
 
 
 def main():
