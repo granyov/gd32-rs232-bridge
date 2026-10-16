@@ -4,6 +4,7 @@
 #include "gd32f10x.h"
 #include "bridge.h"
 #include "config.h"
+#include "flow_control.h"
 
 #ifndef HOST_BAUD
 #define HOST_BAUD 38400U
@@ -25,6 +26,13 @@ static config_record_t running_config;
 static volatile uint32_t ticks;
 static volatile uint8_t cts_blocked;
 static bool rts_asserted = true;
+
+typedef struct {
+    volatile uint32_t cts_pauses, cts_resumes;
+    volatile uint32_t rts_deassertions, rts_assertions;
+} flow_stats_t;
+/* Debuggable over SWD with a matching ELF; counters clear at boot. */
+flow_stats_t flow_stats;
 
 static void fatal_error(void) {
     __disable_irq();
@@ -84,23 +92,24 @@ static void uart_init(uint32_t u, uint32_t baud, uint8_t bits,
 /* Only external RS-232 flow control is wired: PA0=CTS, PA1=RTS. */
 static bool cts_allows_tx(void) {
     return running_config.flow != CONFIG_FLOW_RTS_CTS ||
-           gpio_input_bit_get(GPIOA, GPIO_PIN_0) == RESET;
+           flow_cts_allows(true, gpio_input_bit_get(GPIOA, GPIO_PIN_0) == RESET);
 }
 
 /* The host's TX queue receives bytes from RS-232 RX.
  * Only equal-priority UART IRQs access the queue and this function. */
 static void update_rts(void) {
     if (running_config.flow != CONFIG_FLOW_RTS_CTS) return;
-    const bridge_queue_t *q = &bridge.tx[BRIDGE_HOST];
-    const uint16_t used = (uint16_t)((q->write - q->read) &
-                                    (BRIDGE_QUEUE_SIZE - 1U));
-    if (rts_asserted && used >= 1536U) {
-        gpio_bit_set(GPIOA, GPIO_PIN_1);  /* deassert RS-232 RTS */
-        rts_asserted = false;
-    } else if (!rts_asserted && used <= 512U) {
-        gpio_bit_reset(GPIOA, GPIO_PIN_1); /* assert RS-232 RTS */
-        rts_asserted = true;
+    const uint16_t used = flow_queue_used(&bridge.tx[BRIDGE_HOST]);
+    const bool next_asserted = flow_rts_next(rts_asserted, used);
+    if (next_asserted == rts_asserted) return;
+    if (next_asserted) {
+        gpio_bit_reset(GPIOA, GPIO_PIN_1);
+        ++flow_stats.rts_assertions;
+    } else {
+        gpio_bit_set(GPIOA, GPIO_PIN_1);
+        ++flow_stats.rts_deassertions;
     }
+    rts_asserted = next_asserted;
 }
 
 static void uart_irq(uint32_t u, uint32_t peer, unsigned src) {
@@ -124,6 +133,7 @@ static void uart_irq(uint32_t u, uint32_t peer, unsigned src) {
     if ((stat & USART_STAT_TBE) && (USART_CTL0(u) & USART_CTL0_TBEIE)) {
         if (src == BRIDGE_LOGGER && !cts_allows_tx()) {
             /* Suspend TX without interrupt spin until SysTick sees CTS. */
+            if (!cts_blocked) ++flow_stats.cts_pauses;
             cts_blocked = 1U;
             USART_CTL0(u) &= ~USART_CTL0_TBEIE;
         } else {
@@ -147,6 +157,7 @@ void SysTick_Handler(void) {
     ++ticks;
     if (cts_blocked && cts_allows_tx()) {
         cts_blocked = 0U;
+        ++flow_stats.cts_resumes;
         USART_CTL0(USART1) |= USART_CTL0_TBEIE;
     }
 }
