@@ -63,7 +63,7 @@ for legacy in ('sw_usart_process_rx', 'sw_usart_process_tx',
     assert legacy not in symbols, legacy
 assert 0x20000000 <= symbols['_ebss'] < 0x20005000
 assert symbols['_ebss'] + 0x600 <= symbols['_estack']
-assert b'Lazarus SoftW RS232 1.2.0-dev' in binary
+assert b'Lazarus SoftW RS232 1.2.0' in binary
 assert ('HSE%dMHz' % (args.hse // 1000000)).encode() in binary
 assert ('defaults host=%dU logger=%dU 8N1 SWDcfg' % (args.host_baud, args.logger_baud)).encode() in binary
 print('PASS:', elf.name)

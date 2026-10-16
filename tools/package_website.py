@@ -13,7 +13,6 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE = ROOT / "firmware"
 DEFAULT_BUILD = ROOT / "build/hse16000000-host38400-logger38400"
-DATE = "2026-10-16"
 
 NOTICE_STABLE = """LAZARUS UVON | Lazarus SoftW RS232
 ===================================
@@ -39,42 +38,44 @@ BIN нужно записывать с адреса 0x08000000. HEX содерж
 
 Этот пакет содержит ИСХОДНЫЕ проверенные бинарники v1.1.0 без
 изменения содержимого; новое название относится к ZIP и документам.
-Новые функции конфигурации v1.2.0-dev ЗДЕСЬ ОТСУТСТВУЮТ.
+Функции конфигурации версии 1.2.0 ЗДЕСЬ ОТСУТСТВУЮТ.
 
 Документация:
 https://github.com/granyov/gd32-rs232-bridge/blob/main/docs/BOARD_AND_FLASHING.md
 """
 
-NOTICE_DEV = """LAZARUS UVON | Lazarus SoftW RS232
+NOTICE_RELEASE = """LAZARUS UVON | Lazarus SoftW RS232
 ===================================
 
-ЭКСПЕРИМЕНТАЛЬНАЯ ПРОШИВКА — v1.2.0-dev (НЕ STABLE)
+РАБОЧАЯ ПРОГРАММНАЯ СБОРКА v1.2.0
 
-Собрана из ветки feature/softw-rs232-config.
-Проверены GCC/Cortex-M3 сборка, HEX/BIN и unit tests.
-На реальных GD32 портов V.24 УВОН ЭТА ВЕРСИЯ ЕЩЕ НЕ ПРОВЕРЕНА.
+Назначение: прошивка GD32F103C8T6 портов V.24 / RS-232
+промышленного компьютера LAZARUS UVON.
 
-Изменения: скорости UART хоста / RS-232 независимо 1200..115200,
-форматы 8N1/2, 8E1/2, 8O1/2, 7E1/2, 7O1/2, программное RTS/CTS
-со стороны внешнего RS-232, настройки в двух Flash страницах.
+ПРОВЕРЕНО: кросс-компиляция для Cortex-M3, программные тесты
+очередей, CRC32, двух слотов, RTS/CTS, HEX/BIN и границы памяти.
+НЕ ПРОВЕРЕНО: работа v1.2.0 на физических платах УВОН.
+Аппаратно подтверждена только предыдущая версия v1.1.0.
 
-При отсутствии двух валидных конфигураций используются заводские
-38400/38400, 8N1, без flow control.
-Управление настройками — ТОЛЬКО через SWD с перезагрузкой;
-команд в пользовательский UART поток прошивка не добавляет.
-Перед включением RTS/CTS необходимо физически проверить CTS/RTS.
+Возможности: независимые скорости UART хоста и внешнего RS-232
+1200..115200 бод, режимы 8N1/N2, 8E1/E2, 8O1/O2, 7E1/E2,
+7O1/O2, программное RTS/CTS на внешней линии, настройки Flash.
 
-Адрес BIN: 0x08000000.
-ВАЖНО: конфигурация хранится в последних 2 КиБ Flash:
-0x0800F800 (A), 0x0800FC00 (B). НЕ стирайте эти страницы при
-обновлении приложения. Mass erase удалит настройки.
-Полная проверка оборудования и аварийного восстановления
-обязательна до использования в производстве.
+Заводские значения: 38400 / 38400, 8N1, flow control выключен.
+Конфигурацию нужно записывать через SWD, после этого сделать reset.
+Через обычный UART параметры не меняются.
+При использовании RTS/CTS необходимо подтвердить подключение
+и полярность сигналов CTS/RTS на конкретной плате.
 
-ПУБЛИКУЙТЕ КАК EXPERIMENTAL / BETA, а не как стабильный релиз.
+Запись BIN: адрес 0x08000000. HEX содержит адреса.
+ВНИМАНИЕ: страницы конфигурации 0x0800F800 (A) и 0x0800FC00 (B)
+не должны стираться при обновлении программы. Mass erase уничтожит
+их содержимое. До записи сохраните все 64 КиБ Flash и option bytes.
+Нельзя автоматически отключать защиту чтения: возможна потеря данных.
 
-Документация:
-https://github.com/granyov/gd32-rs232-bridge/blob/feature/softw-rs232-config/docs/CONFIGURATION.md
+Подробная инструкция: CONFIGURATION.md, BOARD_AND_FLASHING.md
+Документация и релиз:
+https://github.com/granyov/gd32-rs232-bridge/releases/tag/v1.2.0
 """
 
 
@@ -154,27 +155,27 @@ def build_stable(out):
     )
 
 
-def build_dev(out, builddir):
+def build_release(out, builddir):
     stem = "lazarus-softw-rs232-hse16000000-38400-38400"
     files = {
         "firmware/" + stem + suffix: (builddir / (stem + suffix)).read_bytes()
         for suffix in (".bin", ".hex")
     }
-    assert b"Lazarus SoftW RS232 1.2.0-dev" in files["firmware/" + stem + ".bin"]
+    assert b"Lazarus SoftW RS232 1.2.0" in files["firmware/" + stem + ".bin"]
     if len(files["firmware/" + stem + ".bin"]) >= 62 * 1024:
         raise RuntimeError("Binary may overlap reserved Flash config pages")
-    files["README_RU.txt"] = NOTICE_DEV
+    files["README_RU.txt"] = NOTICE_RELEASE
     files["CONFIGURATION.md"] = (ROOT / "docs/CONFIGURATION.md").read_bytes()
     files["BOARD_AND_FLASHING.md"] = (ROOT / "docs/BOARD_AND_FLASHING.md").read_bytes()
     return package_zip(
-        out, "Lazarus-SoftW-RS232-v1.2.0-dev-EXPERIMENTAL.zip", files,
-        dict(product="Lazarus SoftW RS232", version="1.2.0-dev",
-             status="experimental-not-hardware-tested", mcu="GD32F103C8T6",
+        out, "Lazarus-SoftW-RS232-v1.2.0-WORKING.zip", files,
+        dict(product="Lazarus SoftW RS232", version="1.2.0",
+             status="software-tested-not-hardware-tested", mcu="GD32F103C8T6",
              hxtal_hz=16000000, host_baud_default=38400,
              rs232_baud_default=38400, format_default="8N1",
              binary_base="0x08000000", config_slots=["0x0800F800", "0x0800FC00"],
              source_commit=git_commit(),
-             source_branch="feature/softw-rs232-config",
+             source_branch="main",
              warning="NOT tested on LAZARUS UVON physical boards")
     )
 
@@ -184,7 +185,7 @@ def main():
     p.add_argument("--output", type=Path, default=ROOT / "dist")
     p.add_argument("--build", type=Path, default=DEFAULT_BUILD)
     args = p.parse_args()
-    for pkg in (build_stable(args.output), build_dev(args.output, args.build)):
+    for pkg in (build_stable(args.output), build_release(args.output, args.build)):
         print(f"OK {pkg.name} ({pkg.stat().st_size} bytes; SHA256 {sha256(pkg.read_bytes())})")
 
 

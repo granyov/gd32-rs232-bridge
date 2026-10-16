@@ -1,4 +1,5 @@
 name: Lazarus SoftW RS232 firmware
+
 on:
   push:
     branches: [main, "docs/lazarus-softw-rs232", "feature/softw-rs232-config"]
@@ -13,18 +14,48 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi python3 make
-      - name: Verify source and host tests
+      - name: Compile and run tests
         run: |
           make test
           make -j2 all verify
-      - name: Package website firmware archives
+      - name: Package release and previous tested version
         run: |
           python3 tools/package_website.py
           ls -lah dist
-      - name: Upload two website-ready ZIP packages
+      - name: Preserve ZIP packages from CI
         uses: actions/upload-artifact@v4
         with:
           name: Lazarus-SoftW-RS232-website-packages
           path: dist/*.zip
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
+
+  publish-release:
+    name: Publish v1.2.0 GitHub Release
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve firmware ZIPs after successful build
+        uses: actions/download-artifact@v4
+        with:
+          name: Lazarus-SoftW-RS232-website-packages
+          path: dist
+      - name: Publish release (only when tag does not exist)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view v1.2.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v1.2.0 already exists, not overwriting published binaries."
+          else
+            gh release create v1.2.0 \
+              dist/Lazarus-SoftW-RS232-v1.2.0-WORKING.zip \
+              dist/Lazarus-SoftW-RS232-v1.1.0-STABLE.zip \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Lazarus SoftW RS232 v1.2.0 — рабочая сборка" \
+              --notes-file docs/RELEASE_1.2.0_RU.md
+          fi
