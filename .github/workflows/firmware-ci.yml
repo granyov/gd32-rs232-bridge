@@ -17,3 +17,14 @@ jobs:
         run: |
           make test
           make -j2 all verify
+      - name: Package website firmware archives
+        run: |
+          python3 tools/package_website.py
+          ls -lah dist
+      - name: Upload two website-ready ZIP packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lazarus-SoftW-RS232-website-packages
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
