@@ -14,7 +14,7 @@ DEFINES := -DGD32F10X_MD -DHXTAL_VALUE=$(HSE)U -DHOST_BAUD=$(HOST_BAUD)U -DLOGGE
 CPU := -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
 CFLAGS := $(CPU) $(INCLUDES) $(DEFINES) -std=c11 -Os -g3 \
  -ffunction-sections -fdata-sections -fno-common -Wall -Wextra -Werror -MMD -MP
-SOURCES := Core/Src/main.c Core/Src/bridge.c Core/Src/runtime.c \
+SOURCES := Core/Src/main.c Core/Src/bridge.c Core/Src/config.c Core/Src/flow_control.c Core/Src/runtime.c \
  $(CMSIS)/GD/GD32F10x/Source/system_gd32f10x.c \
  $(SDK)/Source/gd32f10x_rcu.c $(SDK)/Source/gd32f10x_gpio.c \
  $(SDK)/Source/gd32f10x_usart.c $(SDK)/Source/gd32f10x_misc.c $(SDK)/Source/gd32f10x_fwdgt.c
@@ -50,6 +50,15 @@ test:
 	 -fsanitize=address,undefined -ICore/Inc tests/test_bridge.c Core/Src/bridge.c \
 	 -o build/tests/test_bridge
 	./build/tests/test_bridge
+	$${HOST_CC:-cc} -std=c11 -Wall -Wextra -Werror -g \
+	 -fsanitize=address,undefined -ICore/Inc tests/test_config.c Core/Src/config.c \
+	 -o build/tests/test_config
+	./build/tests/test_config
+	$${HOST_CC:-cc} -std=c11 -Wall -Wextra -Werror -g \
+	 -fsanitize=address,undefined -ICore/Inc tests/test_flow_control.c Core/Src/flow_control.c \
+	 -o build/tests/test_flow_control
+	./build/tests/test_flow_control
+	python3 -m unittest discover -s tests -p 'test_config_tool.py'
 
 verify: all
 	python3 tests/verify_firmware.py $(BUILD)/$(NAME).elf --prefix $(PREFIX) \
