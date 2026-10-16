@@ -46,7 +46,7 @@ for line in elf.with_suffix('.hex').read_text().splitlines():
         raise AssertionError('Unsupported HEX record type: '+str(kind))
 assert eof
 assert min(memory) == 0x08000000
-assert max(memory) < 0x08010000
+assert max(memory) < 0x0800F800  # last two pages reserved
 assert len(binary) == max(memory)-min(memory)+1
 assert all(binary[addr-0x08000000] == value for addr, value in memory.items())
 assert struct.unpack_from('<I', binary, 0)[0] == 0x20005000
@@ -61,9 +61,9 @@ for legacy in ('sw_usart_process_rx', 'sw_usart_process_tx',
     assert legacy not in symbols, legacy
 assert 0x20000000 <= symbols['_ebss'] < 0x20005000
 assert symbols['_ebss'] + 0x600 <= symbols['_estack']
-assert b'Lazarus SoftW RS232 1.1.0' in binary
+assert b'Lazarus SoftW RS232 1.2.0-dev' in binary
 assert ('HSE%dMHz' % (args.hse // 1000000)).encode() in binary
-assert ('host=%dU logger=%dU 8N1' % (args.host_baud, args.logger_baud)).encode() in binary
+assert ('defaults host=%dU logger=%dU 8N1 SWDcfg' % (args.host_baud, args.logger_baud)).encode() in binary
 print('PASS:', elf.name)
 print('  BIN/HEX match; Intel HEX checksums valid; flash origin 0x08000000')
 print('  Reset, SysTick, USART0 and USART1 vectors resolve to real handlers')

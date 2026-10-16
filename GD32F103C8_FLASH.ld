@@ -1,6 +1,6 @@
 ENTRY(Reset_Handler)
 MEMORY {
-  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 64K
+  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 62K /* final two 1 KiB pages reserved for configuration */
   RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 20K
 }
 _estack = ORIGIN(RAM) + LENGTH(RAM);
