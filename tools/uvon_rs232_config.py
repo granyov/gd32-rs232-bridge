@@ -107,7 +107,25 @@ def main():
             sub.add_argument("--host-frame", choices=FRAME)
             sub.add_argument("--rs232-frame", choices=FRAME)
             sub.add_argument("--flow", choices=FLOW)
+    verify = cmds.add_parser("verify", help="Validate SWD readback against prepared page")
+    verify.add_argument("--expected", type=Path, required=True,
+                        help="1 KiB prepared image")
+    verify.add_argument("--readback", type=Path, required=True,
+                        help="1 KiB dump read from the target address")
     args = parser.parse_args()
+    if args.command == "verify":
+        expected = args.expected.read_bytes()
+        readback = args.readback.read_bytes()
+        if len(expected) != PAGE_SIZE or len(readback) != PAGE_SIZE:
+            parser.error("Both pages must contain exactly 1024 bytes")
+        cfg = decode(expected)
+        if cfg is None or any(x != 0xFF for x in expected[RECORD.size:]):
+            parser.error("Expected page is not valid or padding is not erased")
+        if expected != readback:
+            parser.error("SWD page mismatch: check target address and wiring")
+        print("PASS: SWD readback matches prepared 1024-byte Flash page")
+        print("Configuration:", describe(cfg))
+        return
     a, b = read_slots(args)
     idx, chosen = selected(a, b)
     print("Slot A:", describe(a))
@@ -154,7 +172,9 @@ def main():
     print('Using a suitable OpenOCD target/adapter, HALT the MCU, then:')
     print(f'flash write_image erase {args.output} 0x{target:08X} bin')
     print(f'verify_image {args.output} 0x{target:08X} bin')
-    print('reset run')
+    print(f'dump_image verified-slot.bin 0x{target:08X} 1024')
+    print(f'python3 tools/uvon_rs232_config.py verify --expected {args.output} --readback verified-slot.bin')
+    print('reset run  # only after readback passes')
 
 
 if __name__ == "__main__":

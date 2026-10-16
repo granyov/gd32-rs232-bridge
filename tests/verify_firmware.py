@@ -56,6 +56,8 @@ for index, name in [(1, 'Reset_Handler'), (15, 'SysTick_Handler'),
     assert entry == (symbols[name] | 1), (name, hex(entry))
     assert 0x08000000 <= (entry & ~1) < 0x08010000
     assert symbols[name] != symbols['Default_Handler']
+assert 'active_config_slot' in symbols
+assert 'flow_stats' in symbols
 for legacy in ('sw_usart_process_rx', 'sw_usart_process_tx',
                'HAL_TIM_PeriodElapsedCallback', 'HAL_UART_IRQHandler'):
     assert legacy not in symbols, legacy

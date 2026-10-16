@@ -90,7 +90,7 @@ make -j4 all verify HOST_BAUD=9600 LOGGER_BAUD=9600
 
 - `Core/Src/main.c` — GD32 USART0/USART1, GPIO, IRQ, watchdog и строка идентификации Lazarus SoftW RS232.
 - `Core/Src/config.c` — разбор настроек из защищённой CRC пары Flash-слотов, заводские параметры.
-- `tools/uvon_rs232_config.py` — утилита подготовки страниц настроек через SWD.
+- `tools/uvon_rs232_config.py` — подготовка страниц конфигурации и проверка считанных через SWD данных.
 - `Core/Src/bridge.c` — очереди и счётчики ошибок, независимо от периферии.
 - `Core/Startup/` — GCC startup для GD32F10x MD.
 - `GD32F103C8_FLASH.ld` — Flash 64 КиБ, SRAM 20 КиБ.

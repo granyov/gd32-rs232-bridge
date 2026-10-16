@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 static config_record_t standard(uint32_t sequence) {
     config_record_t c = {
@@ -16,6 +17,11 @@ static config_record_t standard(uint32_t sequence) {
 }
 int main(void) {
     config_record_t a = standard(1), b = standard(2);
+    /* Cross-language golden bytes: Python '<IIIII8BI' / zlib CRC32.
+     * A mismatch would make SWD-written pages unreadable by firmware. */
+    const uint8_t golden[32] = {0x4c, 0x52, 0x57, 0x31, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x00, 0x4b, 0x00, 0x00, 0x08, 0x00, 0x01, 0x07, 0x01, 0x02, 0x01, 0x00, 0xb0, 0x49, 0xcf, 0x0d};
+    assert(memcmp(&a, golden, sizeof(golden)) == 0);
+    assert(config_crc32(&a) == 0x0dcf49b0U);
     assert(config_valid(&a) && config_valid(&b));
     assert(config_select(&a, &b) == &b);
     b.crc32 ^= 1U;
