@@ -1,0 +1,19 @@
+name: Lazarus SoftW RS232 firmware
+on:
+  push:
+    branches: [main, "docs/lazarus-softw-rs232", "feature/softw-rs232-config"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Arm toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi python3 make
+      - name: Verify source and host tests
+        run: |
+          make test
+          make -j2 all verify
